@@ -220,18 +220,24 @@
       reader.readAsArrayBuffer(file);
     });
 
-    window.onload = function () {
-      const saved = localStorage.getItem('vendorData');
-      if (saved) {
-        allVendors = JSON.parse(saved);
-        renderTable(allVendors);
-      }
-      document.getElementById("excelUpload").addEventListener("change", function () {
-        const fileName = this.files[0] ? this.files[0].name : "未選擇檔案";
-        document.getElementById("fileName").innerText = fileName;
-     });
+    // window.onload 改成這樣
+window.onload = function () {
+  axios.get('/vendors')
+    .then(res => {
+      allVendors = res.data.data;
+      renderTable(allVendors);
+    })
+    .catch(() => {
+      allVendors = [];
+      renderTable(allVendors);
+    });
 
-    };
+  document.getElementById("excelUpload").addEventListener("change", function () {
+    const fileName = this.files[0] ? this.files[0].name : "未選擇檔案";
+    document.getElementById("fileName").innerText = fileName;
+  });
+};
+
 
     // 管理員登入邏輯
     document.getElementById('adminBtn').addEventListener('click', function () {
