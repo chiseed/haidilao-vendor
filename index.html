@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>海底撈統領店特約廠商名單</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      padding: 30px;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #d62828;
+    }
+
+    #searchInput {
+      display: block;
+      margin: 0 auto 20px auto;
+      padding: 10px 15px;
+      width: 80%;
+      max-width: 400px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    #excelUpload {
+      display: none; /* 預設不顯示 */
+      margin: 0 auto 30px auto;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff0f0;
+    }
+
+    #adminBtn {
+      display: block;
+      margin: 0 auto 15px auto;
+      background-color: #f03e3e;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f03e3e;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #ffe8e8;
+    }
+
+    @media screen and (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      #searchInput, #excelUpload {
+        width: 100%;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+    #adminCorner {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+}
+
+#adminBtn {
+  background-color: transparent;
+  color: #999;
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#adminBtn:hover {
+  background-color: #f03e3e;
+  color: white;
+  border-color: #f03e3e;
+}
+
+  </style>
+</head>
+<body>
+  <h2>海底撈統領店特約廠商名單</h2>
+
+  <div id="adminCorner">
+    <button id="adminBtn">管理員</button>
+  </div>  
+  <div id="uploadWrapper" style="display:none; text-align: center; margin-bottom: 20px;">
+    <label style="background-color:#f03e3e; color:white; padding:10px 20px; border-radius:8px; cursor:pointer;">
+      選擇 Excel 檔案
+      <input type="file" id="excelUpload" accept=".xlsx" style="display: none;" />
+    </label>
+    <span id="fileName" style="margin-left:10px; color:#d62828;">未選擇檔案</span>
+  </div>
+  
+  <input type="text" id="searchInput" placeholder="輸入公司行號搜尋..." oninput="filterTable()">
+
+  <table>
+    <thead>
+      <tr>
+        <th>公司行號</th>
+        <th>優惠折扣</th>
+        <th>使用規則</th>
+      </tr>
+    </thead>
+    <tbody id="vendorTable"></tbody>
+  </table>
+
+  <script>
+    let allVendors = [];
+
+    function renderTable(data) {
+      const table = document.getElementById('vendorTable');
+      table.innerHTML = '';
+      data.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${v["公司行號"] || "-"}</td>
+          <td>${v["優惠折扣"] || "-"}</td>
+          <td>${v["使用規則"] || "-"}</td>
+        `;
+        table.appendChild(tr);
+      });
+    }
+
+    function filterTable() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allVendors.filter(v =>
+        (v["公司行號"] && v["公司行號"].toLowerCase().includes(keyword))
+      );
+      renderTable(filtered);
+    }
+
+    function getSheetDataAuto(sheet) {
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      let startIndex = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.includes("公司行號") && row.includes("優惠折扣") && row.includes("使用規則")) {
+          startIndex = i;
+          break;
+        }
+      }
+
+      if (startIndex === -1) {
+        alert("無法找到正確的欄位標題，請確認 Excel 中有「公司行號」、「優惠折扣」、「使用規則」。");
+        return [];
+      }
+
+      const header = rows[startIndex];
+      const dataRows = rows.slice(startIndex + 1);
+
+      return dataRows.map(row => {
+        const obj = {};
+        for (let i = 0; i < header.length; i++) {
+          obj[header[i]] = row[i];
+        }
+        return obj;
+      });
+    }
+
+    document.getElementById('excelUpload').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = getSheetDataAuto(sheet);
+
+        if (json.length > 0 && json.some(item => item["公司行號"])) {
+  allVendors = json;
+  localStorage.setItem('vendorData', JSON.stringify(json));
+  renderTable(allVendors);
+  alert("✅ 上傳成功，資料已更新！");
+} else {
+  alert("⚠️ 檔案格式錯誤或找不到有效資料，請確認欄位名稱為「公司行號、優惠折扣、使用規則」。");
+}
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    window.onload = function () {
+      const saved = localStorage.getItem('vendorData');
+      if (saved) {
+        allVendors = JSON.parse(saved);
+        renderTable(allVendors);
+      }
+      document.getElementById("excelUpload").addEventListener("change", function () {
+        const fileName = this.files[0] ? this.files[0].name : "未選擇檔案";
+        document.getElementById("fileName").innerText = fileName;
+     });
+
+    };
+
+    // 管理員登入邏輯
+    document.getElementById('adminBtn').addEventListener('click', function () {
+      const pwd = prompt("請輸入管理員密碼：");
+      if (pwd === "42974314") {
+        document.getElementById('uploadWrapper').style.display = "block";
+        alert("✅ 登入成功！可以上傳 Excel");
+      } else {
+        alert("❌ 密碼錯誤");
+      }
+    });
+  </script>
+</body>
+</html>
