@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>海底撈統領店特約廠商名單</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -13,23 +14,34 @@
       color: #333;
     }
 
-    h2 {
-      text-align: center;
-      font-size: 28px;
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
-      color: #d62828;
     }
 
-    #searchInput {
-      display: block;
-      margin: 0 auto 20px auto;
+    .header-center {
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .header-center h2 {
+      font-size: 26px;
+      color: #d62828;
+      margin-bottom: 10px;
+    }
+
+    .header-center input {
       padding: 10px 15px;
-      width: 80%;
-      max-width: 400px;
+      width: 300px;
       font-size: 16px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .header-bar img {
+      height: 80px;
     }
 
     #adminCorner {
@@ -104,21 +116,30 @@
   </style>
 </head>
 <body>
-  <h2>海底撈統領店特約廠商名單</h2>
-  <div id="adminCorner">
-    <button id="adminBtn">管理員</button>
+  <div class="header-bar">
+  <img src="hi_logo.png" alt="Hi Logo" class="logo-img">
+  
+  <div class="header-center">
+    <h2>海底撈統領店特約廠商名單</h2>
+    <input type="text" id="searchInput" placeholder="輸入公司行號搜尋..." oninput="filterTable()">
   </div>
+  
+  <img src="panda.png" alt="Panda Mascot" class="panda-img">
+</div>
 
-  <div id="uploadWrapper">
-    <label id="excelUploadLabel">
-      選擇 Excel 檔案
-      <input type="file" id="excelUpload" accept=".xlsx" style="display:none">
-    </label>
-    <span id="fileName">未選擇檔案</span>
-  </div>
+<!-- 管理員按鈕固定右上角 -->
+<div id="adminCorner">
+  <button id="adminBtn">管理員</button>
+</div>
 
-  <input type="text" id="searchInput" placeholder="輸入公司行號搜尋..." oninput="filterTable()">
-
+<!-- 檔案上傳區 -->
+<div id="uploadWrapper">
+  <label id="excelUploadLabel">
+    選擇 Excel 檔案
+    <input type="file" id="excelUpload" accept=".xlsx" style="display:none">
+  </label>
+  <span id="fileName">未選擇檔案</span>
+</div>
   <table>
     <thead>
       <tr>
