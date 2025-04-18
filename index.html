@@ -199,28 +199,26 @@
     }
 
     document.getElementById('excelUpload').addEventListener('change', function (e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = getSheetDataAuto(sheet);
+  const file = e.target.files[0];
+  if (!file) return;
 
-        if (json.length > 0 && json.some(item => item["公司行號"])) {
-  allVendors = json;
-  localStorage.setItem('vendorData', JSON.stringify(json));
-  renderTable(allVendors);
-  alert("✅ 上傳成功，資料已更新！");
-} else {
-  alert("⚠️ 檔案格式錯誤或找不到有效資料，請確認欄位名稱為「公司行號、優惠折扣、使用規則」。");
-}
-      };
-      reader.readAsArrayBuffer(file);
+  const formData = new FormData();
+  formData.append('file', file);
+
+  axios.post('/upload', formData)
+    .then(() => {
+      alert("✅ 上傳成功！");
+      return axios.get('/vendors'); // 上傳後重新抓資料
+    })
+    .then(res => {
+      allVendors = res.data.data;
+      renderTable(allVendors);
+    })
+    .catch(err => {
+      alert("❌ 上傳失敗：" + err);
     });
+});
 
-    // window.onload 改成這樣
 window.onload = function () {
   axios.get('/vendors')
     .then(res => {
