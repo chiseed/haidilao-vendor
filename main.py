@@ -8,10 +8,6 @@ import os
 
 app = FastAPI()
 
-# 靜態檔案
-app.mount("/images", StaticFiles(directory="images"), name="images")
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
-
 # CORS 設定
 app.add_middleware(
     CORSMiddleware,
@@ -44,7 +40,7 @@ def upload_excel(file: UploadFile = File(...)):
                 break
 
         if not all(col in df.columns for col in ["公司行號", "優惠折扣", "使用規則"]):
-            return JSONResponse(status_code=400, content={"message": f"接收到的欄位：{list(df.columns)}\\n缺少必要欄位"})
+            return JSONResponse(status_code=400, content={"message": f"接收到的欄位：{list(df.columns)}\n缺少必要欄位"})
 
         vendors = df[["公司行號", "優惠折扣", "使用規則"]].dropna(subset=["公司行號"]).to_dict(orient="records")
         with open(VENDOR_JSON_PATH, "w", encoding="utf-8") as f:
@@ -53,3 +49,14 @@ def upload_excel(file: UploadFile = File(...)):
         return {"message": f"上傳成功，共 {len(vendors)} 筆"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"處理失敗：{str(e)}"})
+
+# 首頁 index.html 回傳
+@app.get("/", response_class=HTMLResponse)
+def root():
+    with open("index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+# 靜態檔案 (圖片)
+app.mount("/images", StaticFiles(directory="images"), name="images")
+# 其他靜態資源（如 index.html 內需引用的 css, js）
+app.mount("/static", StaticFiles(directory="."), name="static")
