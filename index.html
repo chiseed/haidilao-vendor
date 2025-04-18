@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>海底撈統領店特約廠商名單</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
@@ -32,25 +33,37 @@
     }
 
     #excelUpload {
-      display: none; /* 預設不顯示 */
-      margin: 0 auto 30px auto;
-      padding: 8px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: #fff0f0;
+      display: none;
     }
 
     #adminBtn {
-      display: block;
-      margin: 0 auto 15px auto;
+      background-color: transparent;
+      color: #999;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    #adminBtn:hover {
       background-color: #f03e3e;
       color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
+      border-color: #f03e3e;
+    }
+
+    #adminCorner {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 100;
+    }
+
+    #uploadWrapper {
+      display: none;
+      text-align: center;
+      margin-bottom: 20px;
     }
 
     table {
@@ -84,7 +97,7 @@
         padding: 15px;
       }
 
-      #searchInput, #excelUpload {
+      #searchInput {
         width: 100%;
       }
 
@@ -92,30 +105,6 @@
         font-size: 14px;
       }
     }
-    #adminCorner {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 100;
-}
-
-#adminBtn {
-  background-color: transparent;
-  color: #999;
-  border: 1px solid #ccc;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-#adminBtn:hover {
-  background-color: #f03e3e;
-  color: white;
-  border-color: #f03e3e;
-}
-
   </style>
 </head>
 <body>
@@ -124,14 +113,15 @@
   <div id="adminCorner">
     <button id="adminBtn">管理員</button>
   </div>  
-  <div id="uploadWrapper" style="display:none; text-align: center; margin-bottom: 20px;">
+
+  <div id="uploadWrapper">
     <label style="background-color:#f03e3e; color:white; padding:10px 20px; border-radius:8px; cursor:pointer;">
       選擇 Excel 檔案
-      <input type="file" id="excelUpload" accept=".xlsx" style="display: none;" />
+      <input type="file" id="excelUpload" accept=".xlsx" />
     </label>
     <span id="fileName" style="margin-left:10px; color:#d62828;">未選擇檔案</span>
   </div>
-  
+
   <input type="text" id="searchInput" placeholder="輸入公司行號搜尋..." oninput="filterTable()">
 
   <table>
@@ -170,74 +160,42 @@
       renderTable(filtered);
     }
 
-    function getSheetDataAuto(sheet) {
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      let startIndex = -1;
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.includes("公司行號") && row.includes("優惠折扣") && row.includes("使用規則")) {
-          startIndex = i;
-          break;
-        }
-      }
-
-      if (startIndex === -1) {
-        alert("無法找到正確的欄位標題，請確認 Excel 中有「公司行號」、「優惠折扣」、「使用規則」。");
-        return [];
-      }
-
-      const header = rows[startIndex];
-      const dataRows = rows.slice(startIndex + 1);
-
-      return dataRows.map(row => {
-        const obj = {};
-        for (let i = 0; i < header.length; i++) {
-          obj[header[i]] = row[i];
-        }
-        return obj;
-      });
-    }
-
     document.getElementById('excelUpload').addEventListener('change', function (e) {
-  const file = e.target.files[0];
-  if (!file) return;
+      const file = e.target.files[0];
+      if (!file) return;
 
-  const formData = new FormData();
-  formData.append('file', file);
+      const fileName = file.name || "未選擇檔案";
+      document.getElementById("fileName").innerText = fileName;
 
-  axios.post('/upload', formData)
-    .then(() => {
-      alert("✅ 上傳成功！");
-      return axios.get('/vendors'); // 上傳後重新抓資料
-    })
-    .then(res => {
-      allVendors = res.data.data;
-      renderTable(allVendors);
-    })
-    .catch(err => {
-      alert("❌ 上傳失敗：" + err);
-    });
-});
+      const formData = new FormData();
+      formData.append('file', file);
 
-window.onload = function () {
-  axios.get('/vendors')
-    .then(res => {
-      allVendors = res.data.data;
-      renderTable(allVendors);
-    })
-    .catch(() => {
-      allVendors = [];
-      renderTable(allVendors);
+      axios.post('/upload', formData)
+        .then(() => {
+          alert("✅ 上傳成功！");
+          return axios.get('/vendors');
+        })
+        .then(res => {
+          allVendors = res.data.data;
+          renderTable(allVendors);
+        })
+        .catch(err => {
+          alert("❌ 上傳失敗：" + err);
+        });
     });
 
-  document.getElementById("excelUpload").addEventListener("change", function () {
-    const fileName = this.files[0] ? this.files[0].name : "未選擇檔案";
-    document.getElementById("fileName").innerText = fileName;
-  });
-};
+    window.onload = function () {
+      axios.get('/vendors')
+        .then(res => {
+          allVendors = res.data.data;
+          renderTable(allVendors);
+        })
+        .catch(() => {
+          allVendors = [];
+          renderTable(allVendors);
+        });
+    };
 
-
-    // 管理員登入邏輯
     document.getElementById('adminBtn').addEventListener('click', function () {
       const pwd = prompt("請輸入管理員密碼：");
       if (pwd === "42974314") {
