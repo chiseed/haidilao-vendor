@@ -1,1 +1,0 @@
-# haidilao-vendor
