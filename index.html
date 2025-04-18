@@ -1,10 +1,10 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <title>海底撈統領店特約廠商名單</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -32,8 +32,11 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    #excelUpload {
-      display: none;
+    #adminCorner {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 100;
     }
 
     #adminBtn {
@@ -53,17 +56,24 @@
       border-color: #f03e3e;
     }
 
-    #adminCorner {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      z-index: 100;
-    }
-
     #uploadWrapper {
       display: none;
       text-align: center;
       margin-bottom: 20px;
+    }
+
+    #excelUploadLabel {
+      background-color: #f03e3e;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    #fileName {
+      margin-left: 10px;
+      color: #d62828;
     }
 
     table {
@@ -91,35 +101,20 @@
     tr:hover {
       background-color: #ffe8e8;
     }
-
-    @media screen and (max-width: 768px) {
-      body {
-        padding: 15px;
-      }
-
-      #searchInput {
-        width: 100%;
-      }
-
-      table {
-        font-size: 14px;
-      }
-    }
   </style>
 </head>
 <body>
   <h2>海底撈統領店特約廠商名單</h2>
-
   <div id="adminCorner">
     <button id="adminBtn">管理員</button>
-  </div>  
+  </div>
 
   <div id="uploadWrapper">
-    <label style="background-color:#f03e3e; color:white; padding:10px 20px; border-radius:8px; cursor:pointer;">
+    <label id="excelUploadLabel">
       選擇 Excel 檔案
-      <input type="file" id="excelUpload" accept=".xlsx" />
+      <input type="file" id="excelUpload" accept=".xlsx" style="display:none">
     </label>
-    <span id="fileName" style="margin-left:10px; color:#d62828;">未選擇檔案</span>
+    <span id="fileName">未選擇檔案</span>
   </div>
 
   <input type="text" id="searchInput" placeholder="輸入公司行號搜尋..." oninput="filterTable()">
@@ -139,10 +134,10 @@
     let allVendors = [];
 
     function renderTable(data) {
-      const table = document.getElementById('vendorTable');
-      table.innerHTML = '';
+      const table = document.getElementById("vendorTable");
+      table.innerHTML = "";
       data.forEach(v => {
-        const tr = document.createElement('tr');
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${v["公司行號"] || "-"}</td>
           <td>${v["優惠折扣"] || "-"}</td>
@@ -153,39 +148,36 @@
     }
 
     function filterTable() {
-      const keyword = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allVendors.filter(v =>
-        (v["公司行號"] && v["公司行號"].toLowerCase().includes(keyword))
-      );
+      const keyword = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = allVendors.filter(v => v["公司行號"]?.toLowerCase().includes(keyword));
       renderTable(filtered);
     }
 
-    document.getElementById('excelUpload').addEventListener('change', function (e) {
+    document.getElementById("excelUpload").addEventListener("change", function (e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      const fileName = file.name || "未選擇檔案";
-      document.getElementById("fileName").innerText = fileName;
+      document.getElementById("fileName").innerText = file.name;
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      axios.post('/upload', formData)
+      axios.post("/upload", formData)
         .then(() => {
           alert("✅ 上傳成功！");
-          return axios.get('/vendors');
+          return axios.get("/vendors");
         })
         .then(res => {
           allVendors = res.data.data;
           renderTable(allVendors);
         })
         .catch(err => {
-          alert("❌ 上傳失敗：" + err);
+          alert("❌ 上傳失敗：" + (err.response?.data?.message || err.message));
         });
     });
 
     window.onload = function () {
-      axios.get('/vendors')
+      axios.get("/vendors")
         .then(res => {
           allVendors = res.data.data;
           renderTable(allVendors);
@@ -196,10 +188,10 @@
         });
     };
 
-    document.getElementById('adminBtn').addEventListener('click', function () {
+    document.getElementById("adminBtn").addEventListener("click", function () {
       const pwd = prompt("請輸入管理員密碼：");
       if (pwd === "42974314") {
-        document.getElementById('uploadWrapper').style.display = "block";
+        document.getElementById("uploadWrapper").style.display = "block";
         alert("✅ 登入成功！可以上傳 Excel");
       } else {
         alert("❌ 密碼錯誤");
